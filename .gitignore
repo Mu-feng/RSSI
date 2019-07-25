@@ -1,0 +1,13 @@
+/Debug/
+/MDK-ARM/Adapt_Payload_Power/
+*.o
+*.d
+*.crf
+*.axf
+*.htm
+*.hex
+*.lnp
+*.map
+*.list
+*.su
+*.uvguix.*
