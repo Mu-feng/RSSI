@@ -63,6 +63,7 @@ void SystemClock_Config(void);
 const char at_cmd[] = "AT\r\n";
 uint8_t socket = 0;
 uint8_t data[128];
+int16_t signal_strength[4];
 /* USER CODE END 0 */
 
 /**
@@ -124,7 +125,12 @@ int main(void)
             }
         }
         
-        // 获取信号强度
+        // 成功接收到信号强度数据
+        if(true == get_signal_strength(signal_strength))
+        {
+            sprintf((char*)data,"station1:%d,station2:%d,station3:%d,station4:%d\r\n",signal_strength[0],signal_strength[1],signal_strength[2],signal_strength[3]);
+            send_tcp_packet(socket,data,strlen((char*)data));
+        }
         
         /* USER CODE BEGIN 3 */
     }

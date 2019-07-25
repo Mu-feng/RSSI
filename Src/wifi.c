@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 #include "usart.h"
 
 const char cmd_at[] = "AT\r\n";
@@ -12,6 +13,8 @@ const char cmd_at_cipap[] = "AT+CIPAP_DEF=\"192.168.199.1\",\"192.168.199.1\",\"
 const char cmd_at_cipmux[] = "AT+CIPMUX=1\r\n";
 const char cmd_at_tcp[] = "AT+CIPSERVER=1,8090\r\n";
 const char cmd_at_tcp_send[] = "AT+CIPSEND=%d,%d\r\n";
+const char cmd_at_cwlap[] = "AT+CWLAP\r\n";
+const char *cmd_ssid[] = {"RSSI_STATION1","RSSI_STATION2","RSSI_STATION3","RSSI_STATION4"};
 
 
 uint8_t wifi_recv_buff[WIFI_RECV_SIZE];
@@ -153,4 +156,52 @@ bool get_tcp_data(uint8_t *socket,uint8_t *data)
     return false;
 }
 
+bool get_signal_strength(int16_t *signal_strenth)
+{
+    uint8_t n = 50;
+    wifi_send_cmd((uint8_t*)cmd_at_cwlap,sizeof(cmd_at_cwlap));
+    while(get_recv_flag() == 0 && n > 0)
+    {
+        HAL_Delay(100);
+    }
+    // 成功接收到数据返回
+    if(n > 0)
+    {
+        set_recv_flag();
+        uint16_t recv_len = get_recv_data(wifi_recv_buff);
+        uint16_t offset = 0;
+        int16_t signal_point = 0;
+        uint8_t n = 0;
+        for(uint8_t i = 0; i < 4; i++)
+        {
+            // 每次查找前确定长度大于0
+            if(recv_len > 0)
+            {
+                // 查找SSID
+                signal_point = find_str(&wifi_recv_buff[offset],(uint8_t *)cmd_ssid[i],recv_len);
+                // 更新查找起始位置
+                offset += signal_point;
+                // 跟新剩余数组长度
+                recv_len -= offset;
+                if(signal_point >= 0)
+                {                    
+                    // 从ssid后面找到','
+                    signal_point = find_str(&wifi_recv_buff[offset],(uint8_t *)",",recv_len);
+                    // 更新查找起始位置
+                    offset += signal_point;
+                    // 更新数组剩余长度
+                    recv_len -= offset;
+                    // 找到','后面的数字
+                    signal_strenth[n] = atoi((char*)&wifi_recv_buff[offset + 1]);                    
+                }
+                else
+                {
+                    signal_strenth[i] = 0;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
 
